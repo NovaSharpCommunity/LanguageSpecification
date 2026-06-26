@@ -4,3 +4,8 @@
 # VSCode
 .vscode/
 *.code-workspace
+
+# Tempory File
+*.tmp
+*.tmp.*
+tmp/
