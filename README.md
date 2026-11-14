@@ -6,7 +6,7 @@ The language specification of NovaSharp.
 
 ## Files
 
-- NovaSharp Language Specification Version 1
+- NovaSharp Beta 1.0 Language Specification
   - [zh-cn](./docs/specification/zh-cn.md)
 
 ## License
