@@ -1,4 +1,4 @@
-<img src="https://avatars.githubusercontent.com/u/290948450?s=400&u=f8fdf18606f80ed7ca9406a5ab7eeceb39d80f70" width="100"/>
+<img src="https://logo.novasharp.org/lockup/lockup.svg" width="100"/>
 
 # NovaSharp Language Specification
 
