@@ -1,4 +1,4 @@
-# NovaSharp Beta 1.1 语言规范
+# NovaSharp Beta 1.1 语言标准
 
 NovaSharp 起源于其第一位作者对编程语言的美好幻想，他希望编程语言能够美观、能够不受阻碍地开发任何程序、能够让他用得舒服。
 
@@ -9,7 +9,7 @@ NovaSharp 是一门混合范式的编程语言，以强大的多场景适配能�
 > [!CAUTION]
 > 本 NovaSharp 版本是一个不稳定的 Beta 版本。
 >
-> 这意味着 NovaSharp 后续有较低概率会发生破坏性变更。
+> 这意味着 NovaSharp 后续可能会发生破坏性变更。
 
 ## 目录
 
@@ -164,6 +164,10 @@ NovaSharp 是一门混合范式的编程语言，以强大的多场景适配能�
   - [11.6 条件编译](#116-条件编译)
   - [11.7 编译期边界](#117-编译期边界)
   - [11.8 编译器 API](#118-编译器-api)
+    - [11.8.1 类型查询](#1181-类型查询)
+    - [11.8.2 编译器诊断](#1182-编译器诊断)
+    - [11.8.3 平台查询](#1183-平台查询)
+    - [11.8.4 NOLAA API](#1184-nolaa-api)
 - [12. 内存模型](#12-内存模型)
   - [12.1 内存分配](#121-内存分配)
   - [12.2 NOLAA](#122-nolaa)
@@ -9367,6 +9371,8 @@ fixed UseWindows: boolean = true;
     use WindowsPlatform;
 }
 
+// 平台查询规则见 [11.8.3](#1183-平台查询)
+
 #if UseWindows
 {
     use WindowsPlatform;
@@ -9445,6 +9451,7 @@ else
 - 编译器 API 的函数**必须**为 `linkable` 函数
 - 编译器 API 的函数值**不得**进入运行时
 - `Type`、`Compiler`、`Platform`、`NOLAA` **必须**为编译期代码空间中的命名空间
+  - 有关平台查询，见 [11.8.3](#1183-平台查询)
 - `Type.SizeOf<T>()` **必须**返回 `T` 的内存大小
 - `Type` 的返回值**允许**进入运行时
 - `Compiler` 与 `NOLAA` 的返回值类型**必须**为空类型
@@ -9478,12 +9485,140 @@ local value: integer(4) = X;
 
 有关其完整签名与内容，见 [15.3](#153-compile-time-library-完整内容)。
 
+有关模块：
+
+| 模块       | 职责             | 细则                       |
+| ---------- | ---------------- | -------------------------- |
+| `Type`     | 类型查询         | [11.8.1](#1181-类型查询)   |
+| `Compiler` | 编译期诊断       | [11.8.2](#1182-编译器诊断) |
+| `Platform` | 目标平台查询     | [11.8.3](#1183-平台查询)   |
+| `NOLAA`    | 生命周期分析控制 | [11.8.4](#1184-nolaa-api)  |
+
 有关实现扩展：
 
 - 编译器**允许**在编译期库中定义本标准之外的 API
 - 实现扩展 API **不得**覆盖标准定义的名称**或**改变其语义
-- 实现扩展 API **必须**在编译器文档中声明
 - 使用实现扩展 API 的程序**不得**视为可移植程序
+
+#### 11.8.1 类型查询
+
+**类型查询**是编译期 API `Type` 提供的类型信息查询。
+
+有关 `Type.SizeOf<T>`：
+
+- 签名为 `Type.SizeOf<T>(): cardinal(8)`
+- `T` **必须**为类型
+- 返回值**必须**为 `T` 的内存大小，单位为字节
+- 返回值宽度**必须**等于目标平台的指针宽度
+- 调用**必须**在编译期求值
+- 返回值**允许**进入运行时
+- 函数值**不得**进入运行时
+
+有关使用：
+
+- 编译期使用**必须**经 `#()` 或 `#if` 条件求值
+- 冻结后的值**允许**作为运行期常量
+
+有关完整签名，见 [15.3](#153-compile-time-library-完整内容)。
+
+有关运行时类型信息，见 [3.6](#36-类型构造器)。
+
+#### 11.8.2 编译器诊断
+
+**编译器诊断**是编译期 API `Compiler` 提供的诊断与断言能力。
+
+有关函数：
+
+- `Compiler.LogNote`：产生编译期提示
+- `Compiler.LogWarning`：产生编译期警告
+- `Compiler.LogError`：产生编译期错误
+- `Compiler.Assert`：断言编译期条件
+
+有关行为：
+
+- 诊断函数**必须**接受字符数组消息与长度
+- `LogNote` **不得**阻止代码生成
+- `LogWarning` **不得**阻止代码生成
+- `LogError` **必须**阻止代码生成
+- `Assert` **当**条件为 `false` **时**，**必须**产生编译期错误
+- 诊断**必须**在编译期产生
+- 诊断函数值**不得**进入运行时
+
+有关完整签名，见 [15.3](#153-compile-time-library-完整内容)。
+
+有关编译期条件，见 [11.6](#116-条件编译)。
+
+#### 11.8.3 平台查询
+
+**平台查询**是编译期 API `Platform` 提供的目标平台识别能力。
+
+有关查询：
+
+- 字符串查询：`Platform.Is(name[length: cardinal(4)]: cardinal(1)): boolean`；目标平台具有该规范名称时为 `true`
+- 枚举查询：`Platform.Is(kind: PlatformKind): boolean`；目标平台具有该种类时为 `true`
+
+有关 `PlatformKind` 的枚举成员与规范名称的映射关系：
+
+| `PlatformKind` | 规范名称    |
+| -------------- | ----------- |
+| `Windows`      | `"Windows"` |
+| `Linux`        | `"Linux"`   |
+| `MacOS`        | `"MacOS"`   |
+| `FreeBSD`      | `"FreeBSD"` |
+| `Other`        | 无规范名称  |
+
+有关匹配：
+
+- 规范名称**必须**按字节精确比较，且区分大小写
+- `Platform.Is(name …)` **必须**匹配标准规范名称**或**编译器定义的扩展名称
+- 未定义的名称**必须**视为不匹配，**并**返回 `false`
+- `Platform.Is(PlatformKind.Other)` **必须**在目标不属于已命名平台时返回 `true`
+- `Platform.Is(PlatformKind.Other)` **必须**在目标属于已命名平台时返回 `false`
+- 两种 `Platform.Is` 查询**必须**在编译期求值
+- `#if` 条件中**必须**直接调用 `Platform.Is`，**不得**使用 `#()`
+
+有关扩展名称：
+
+- 编译器**允许**定义 `PlatformKind` 之外的平台名称字符串
+- 扩展名称**不得**与标准规范名称冲突
+- **当**目标平台具有扩展名称**时**，`Platform.Is(name …)` **必须**返回 `true`
+- **当**目标平台具有扩展名称**时**，`Platform.Is(PlatformKind.Other)` **必须**返回 `true`
+- 扩展名称对应的 `PlatformKind` **必须为** `Other`
+- `Platform.Is(PlatformKind.Other)` **不得**区分具体扩展名称
+
+例如：
+
+```novasharp
+#if Platform.Is("MyOS")
+{
+    use MyOSPlatform;
+}
+```
+
+有关完整签名，见 [15.3](#153-compile-time-library-完整内容)。
+
+有关平台种类，见 [15.2](#152-built-in-library-完整内容)。
+
+有关条件编译，见 [11.6](#116-条件编译)。
+
+#### 11.8.4 NOLAA API
+
+**NOLAA API**是编译期 API `NOLAA` 提供的生命周期分析控制函数集合。
+
+有关函数：
+
+- `NOLAA.Abandon`：停止对指针目标的自动分析
+- `NOLAA.Bind`：要求 `required` 在 `requiredBy` 存在期间存在
+- `NOLAA.AssumeNoDemandNext`：假定下一条语句不要求指针目标
+
+有关约束：
+
+- 参数**必须**为指向 NOLAA 可追踪堆对象的指针
+- 调用**必须**在编译期求值
+- 函数值**不得**进入运行时
+- 分析行为**必须**遵循 [12.2](#122-nolaa)
+
+有关完整签名，见 [15.3](#153-compile-time-library-完整内容)。
 
 ## 12. 内存模型
 
@@ -9587,6 +9722,8 @@ fixed Main(): integer(4)
 ### 12.2 NOLAA
 
 **NOLAA**是分析堆分配单位生命周期的编译期工具。由以下职责组成：
+
+有关 NOLAA API，见 [11.8.4](#1184-nolaa-api)。
 
 | 职责                | 对象                 | 结果           |
 | ------------------- | -------------------- | -------------- |
@@ -10530,21 +10667,6 @@ module NOLAA
     public linkable AssumeNoDemandNext(x: pointer);
 }
 ```
-
-有关平台名称：
-
-- `PlatformKind.Windows` 的规范名称**必须**为 `"Windows"`
-- `PlatformKind.Linux` 的规范名称**必须**为 `"Linux"`
-- `PlatformKind.MacOS` 的规范名称**必须**为 `"MacOS"`
-- `PlatformKind.FreeBSD` 的规范名称**必须**为 `"FreeBSD"`
-- `PlatformKind.Other` **不得**具有规范名称
-- 规范名称**必须**按字节精确比较，且区分大小写
-- `Platform.Is(name …)` **必须**按规范名称匹配
-- 规范名称之外的名称**必须**视为不匹配，**并**返回 `false`
-- `Platform.Is(PlatformKind.Other)` **必须**在目标不属于已命名平台时返回 `true`
-- `Platform.Is(PlatformKind.Other)` **必须**在目标属于已命名平台时返回 `false`
-- 两种 `Platform.Is` 查询**必须**在编译期求值
-- `#if` 条件中**必须**直接调用 `Platform.Is`，**不得**使用 `#()`
 
 ---
 
