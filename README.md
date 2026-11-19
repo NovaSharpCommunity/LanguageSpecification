@@ -35,6 +35,16 @@ The language is built for experienced programmers. It offers sharp yet obedient 
 - Language Specification
   - [zh-cn](./docs/specification/zh-cn.md)
 
+## AI Usage Statement and Limitation
+
+Artificial intelligence tools MAY assist in the development of NovaSharp, and **MUST** be used **only** in the following capacities:
+
+- **Drafting documentation**: AI assisted in writing and polishing the language specification, README, and related prose;
+- **Assisting design decisions**: AI served as a sounding board for evaluating alternative designs and their trade-offs;
+- **Verification**: AI was used to cross-check the specification for internal consistency and to review proposed changes.
+
+All design decisions were made and approved by the NovaSharpCommunity. AI output was always subject to human review before adoption, and the NovaSharpCommunity assumes full responsibility for the correctness of this document.
+
 ## License
 
 Copyright (c) 2026 NovaSharpCommunity.
